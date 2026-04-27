@@ -40,6 +40,9 @@ cp .env.example .env
 Current public variables:
 
 - `ASPNETCORE_URLS=http://0.0.0.0:8080`
+- `CORS_ALLOWED_ORIGIN=*`
+- `CORS_ALLOWED_METHODS=GET,OPTIONS`
+- `CORS_ALLOWED_HEADERS=Content-Type,Authorization`
 
 The API loads `.env` on startup and applies the values before building the ASP.NET application.
 

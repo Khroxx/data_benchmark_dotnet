@@ -4,7 +4,48 @@ using System.Diagnostics;
 LoadEnvFile(".env");
 
 var builder = WebApplication.CreateBuilder(args);
+var allowedOrigin = FirstNonEmpty(Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGIN"), "*")!;
+var allowedMethods = FirstNonEmpty(Environment.GetEnvironmentVariable("CORS_ALLOWED_METHODS"), "GET,OPTIONS")!;
+var allowedHeaders = FirstNonEmpty(Environment.GetEnvironmentVariable("CORS_ALLOWED_HEADERS"), "Content-Type,Authorization")!;
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("BenchmarkCors", policy =>
+    {
+        var methods = allowedMethods.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        var headers = allowedHeaders.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+        if (allowedOrigin == "*")
+        {
+            policy.AllowAnyOrigin();
+        }
+        else
+        {
+            policy.WithOrigins(allowedOrigin);
+        }
+
+        if (methods.Length == 0)
+        {
+            policy.AllowAnyMethod();
+        }
+        else
+        {
+            policy.WithMethods(methods);
+        }
+
+        if (headers.Length == 0)
+        {
+            policy.AllowAnyHeader();
+        }
+        else
+        {
+            policy.WithHeaders(headers);
+        }
+    });
+});
+
 var app = builder.Build();
+app.UseCors("BenchmarkCors");
 
 app.MapGet("/ping", () => Results.Text("pong\n", "text/plain"));
 
