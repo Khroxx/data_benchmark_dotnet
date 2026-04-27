@@ -1,6 +1,8 @@
 using System.Text;
 using System.Diagnostics;
 
+LoadEnvFile(".env");
+
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
@@ -153,4 +155,32 @@ static double Median(List<long> values)
 static string? FirstNonEmpty(params string?[] values)
 {
     return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))?.Trim();
+}
+
+static void LoadEnvFile(string path)
+{
+    if (!File.Exists(path))
+    {
+        return;
+    }
+
+    foreach (var rawLine in File.ReadAllLines(path))
+    {
+        var line = rawLine.Trim();
+        if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#') || !line.Contains('='))
+        {
+            continue;
+        }
+
+        var parts = line.Split('=', 2);
+        var key = parts[0].Trim();
+        var value = parts[1].Trim().Trim('"', '\'');
+
+        if (string.IsNullOrWhiteSpace(key) || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(key)))
+        {
+            continue;
+        }
+
+        Environment.SetEnvironmentVariable(key, value);
+    }
 }

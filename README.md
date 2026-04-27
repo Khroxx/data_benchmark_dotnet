@@ -27,6 +27,22 @@ Supported query params:
 - `size` or `sizeKb`
 - `runs`
 
+## Environment
+
+This repo does not require private secrets for local testing.
+
+Public example env file:
+
+```bash
+cp .env.example .env
+```
+
+Current public variables:
+
+- `ASPNETCORE_URLS=http://0.0.0.0:8080`
+
+The API loads `.env` on startup and applies the values before building the ASP.NET application.
+
 ## Local development
 
 Restore and build:
