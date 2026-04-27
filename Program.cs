@@ -1,4 +1,5 @@
 using System.Text;
+using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
@@ -30,7 +31,7 @@ app.MapGet("/api/dotnet/benchmark", (
 
     for (var index = 0; index < parsedRuns; index++)
     {
-        var start = DateTime.UtcNow;
+        var stopwatch = Stopwatch.StartNew();
 
         try
         {
@@ -41,7 +42,8 @@ app.MapGet("/api/dotnet/benchmark", (
             return Results.BadRequest(new { error = exception.Message });
         }
 
-        durations.Add((long)(DateTime.UtcNow - start).TotalMilliseconds);
+        stopwatch.Stop();
+        durations.Add(stopwatch.ElapsedMilliseconds);
     }
 
     return Results.Json(new
