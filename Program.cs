@@ -1,4 +1,3 @@
-using System.Text;
 using System.Diagnostics;
 
 LoadEnvFile(".env");
@@ -132,46 +131,59 @@ static (int Runs, List<string> Warnings) ParseRuns(string? rawRuns)
 static byte[] GeneratePayload(string payloadType, int sizeKb)
 {
     var targetBytes = sizeKb * 1024;
-
-    return payloadType switch
+    var fileName = payloadType switch
     {
-        "flat-json" => PadContent(
-            "{\"id\":1,\"name\":\"benchmark-entry\",\"status\":\"ok\",\"category\":\"flat\",\"active\":true,\"score\":12345}",
-            targetBytes
-        ),
-        "nested-json" => PadContent(
-            "{\"meta\":{\"name\":\"benchmark\",\"version\":1},\"items\":[{\"id\":1,\"tags\":[\"alpha\",\"beta\"],\"payload\":{\"kind\":\"nested\",\"enabled\":true,\"metrics\":{\"count\":3,\"value\":42}}}]}",
-            targetBytes
-        ),
-        "csv" => PadContent(
-            "id,name,status,value\n1,benchmark,ok,42\n2,runner,ok,84\n",
-            targetBytes
-        ),
-        "blob" => PadContent("benchmark-payload-blob-", targetBytes),
+        "flat-json" => "flat.json",
+        "nested-json" => "nested.json",
+        "csv" => "table.csv",
+        "blob" => "blob.txt",
         _ => throw new ArgumentException("invalid type query parameter")
     };
+
+    return RepeatBytes(ReadBenchmarkData(fileName), targetBytes);
 }
 
-static byte[] PadContent(string baseContent, int targetBytes)
+static byte[] ReadBenchmarkData(string fileName)
+{
+    var candidates = new[]
+    {
+        Path.Combine(Directory.GetCurrentDirectory(), "benchmark_data", fileName),
+        Path.Combine(AppContext.BaseDirectory, "benchmark_data", fileName)
+    };
+
+    foreach (var path in candidates)
+    {
+        if (File.Exists(path))
+        {
+            return File.ReadAllBytes(path);
+        }
+    }
+
+    throw new ArgumentException($"benchmark data file not found: {fileName}");
+}
+
+static byte[] RepeatBytes(byte[] baseContent, int targetBytes)
 {
     if (targetBytes <= 0)
     {
         return [];
     }
 
-    if (baseContent.Length >= targetBytes)
+    var payload = new byte[targetBytes];
+    if (baseContent.Length == 0)
     {
-        return Encoding.UTF8.GetBytes(baseContent[..targetBytes]);
+        return payload;
     }
 
-    var builder = new StringBuilder(targetBytes);
-    while (builder.Length < targetBytes)
+    var offset = 0;
+    while (offset < targetBytes)
     {
-        var remaining = targetBytes - builder.Length;
-        builder.Append(remaining >= baseContent.Length ? baseContent : baseContent[..remaining]);
+        var count = Math.Min(baseContent.Length, targetBytes - offset);
+        baseContent.AsSpan(0, count).CopyTo(payload.AsSpan(offset, count));
+        offset += count;
     }
 
-    return Encoding.UTF8.GetBytes(builder.ToString());
+    return payload;
 }
 
 static double Average(List<long> values)
